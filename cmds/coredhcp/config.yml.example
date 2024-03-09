@@ -165,3 +165,13 @@ server4:
         # where destination should be in CIDR notation and gateway should be
         # the IP address of the router through which the destination is reachable
         # - staticroute: 10.20.20.0/24,10.10.10.1
+
+        # discover is providing backend automation when servicing content
+        # to servers through TFTP boot and iSCSI
+        # Targets are automatically configured by using linux TGT
+        # TFTP is automatically configure
+        # File named are expanded by using the MAC address of the client
+        # without the :
+        # an http server used to get status and remove clients can be enabled
+        # it will runs on port 80
+        - discover: /var/ftpd boot.mtd /var/lib/iscsi_disks iscsi.tgt http
