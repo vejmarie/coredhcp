@@ -19,6 +19,7 @@ import (
 	"github.com/coredhcp/coredhcp/plugins"
 	pl_autoconfigure "github.com/coredhcp/coredhcp/plugins/autoconfigure"
 	pl_dns "github.com/coredhcp/coredhcp/plugins/dns"
+	pl_discover "github.com/coredhcp/coredhcp/plugins/discover"
 	pl_file "github.com/coredhcp/coredhcp/plugins/file"
 	pl_ipv6only "github.com/coredhcp/coredhcp/plugins/ipv6only"
 	pl_leasetime "github.com/coredhcp/coredhcp/plugins/leasetime"
@@ -72,6 +73,7 @@ var desiredPlugins = []*plugins.Plugin{
 	&pl_nbp.Plugin,
 	&pl_netmask.Plugin,
 	&pl_prefix.Plugin,
+	&pl_discover.Plugin,
 	&pl_range.Plugin,
 	&pl_router.Plugin,
 	&pl_searchdomains.Plugin,
