@@ -18,6 +18,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"net"
 	"os"
 	"os/exec"
 	"path"
@@ -87,6 +88,11 @@ type Client struct {
 	IP         string
 }
 
+func serveRPM(w http.ResponseWriter, r *http.Request) {
+	b, _ := ioutil.ReadFile("/var/rpms/"+r.URL.Path)
+	w.Write(b)
+}
+
 func home(w http.ResponseWriter, r *http.Request) {
 	head, tail := ShiftPath(r.URL.Path)
 	var clients []Client
@@ -135,6 +141,9 @@ func home(w http.ResponseWriter, r *http.Request) {
 		cmd := exec.Command("tgtadm", "--lld", "iscsi", "--op", "show", "--mode", "target")
 		cOutput, _ := cmd.Output()
 		j := strings.LastIndex(string(cOutput), "Target")
+		if j == -1 {
+			log.Fatal("Error Target not found " + string(cOutput))
+		}
 		k := strings.Index(string(cOutput[j:]), ":")
 		myString := cOutput[j : j+k]
 		biggestTargetNumber := myString[len("Target "):]
@@ -222,6 +231,9 @@ func setup4(args ...string) (handler.Handler4, error) {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/", home)
 		go http.ListenAndServe(":80", mux)
+		mux8000 := http.NewServeMux()
+		mux8000.HandleFunc("/", serveRPM)
+		go http.ListenAndServe(":8000", mux8000)
 	}
 
 	return p.Handler4, nil
@@ -229,6 +241,8 @@ func setup4(args ...string) (handler.Handler4, error) {
 
 func (p *PluginState) Handler4(req, resp *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, bool) {
 	var obfn dhcpv4.Option
+	var clientOption []byte
+	var localMac string
 	rec := Record{
 		state:    "new",
 		bootfile: "boot.mtd",
@@ -238,6 +252,24 @@ func (p *PluginState) Handler4(req, resp *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, bool) 
 	// if not we need to create the soft link to boot it to the default image
 	// soft link is going to be boot_[mac address].mtd pointing to boot.mtd for the moment
 	// If the server is in the database we don't do anything
+        // client := resp.Options.OptionClientIdentifier()
+	// clientOption = resp.Options.Get(dhcpv4.OptionClientIdentifier)
+	clientOption = req.Options.Get(dhcpv4.OptionHostName)
+	// let's extract the mac address
+	if len(string(clientOption)) > 12 {
+		localMac = string(clientOption[len(clientOption)-12:len(clientOption)-10])+
+			":"+string(clientOption[len(clientOption)-10:len(clientOption)-8])+
+			":"+string(clientOption[len(clientOption)-8:len(clientOption)-6])+
+			":"+string(clientOption[len(clientOption)-6:len(clientOption)-4])+
+			":"+string(clientOption[len(clientOption)-4:len(clientOption)-2])+
+			":"+string(clientOption[len(clientOption)-2:]) 
+	} else {
+		localMac = ""
+	}
+        claddr, err := net.ParseMAC(localMac)
+	if err == nil {
+	        req.ClientHWAddr = claddr
+	}
 	record, ok := p.ServersMac[req.ClientHWAddr.String()]
 	if !ok {
 		// Server doesn't exist let's create it
@@ -264,7 +296,8 @@ func (p *PluginState) Handler4(req, resp *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, bool) 
 		f.WriteString("		allow-in-use yes\n")
 		f.WriteString("		write-cache on\n")
 		f.WriteString("     </backing-store>\n")
-		f.WriteString("     initiator-address " + resp.YourIPAddr.String() + "\n")
+	//	f.WriteString("     initiator-address " + resp.YourIPAddr.String() + "\n")
+		f.WriteString("     initiator-name iqn.2016-04.com.open-iscsi:" + strings.ReplaceAll(req.ClientHWAddr.String(),":","") + "\n")
 		f.WriteString("</target>\n")
 		defer f.Close()
 		rec.ip = resp.YourIPAddr.String()
@@ -282,5 +315,5 @@ func (p *PluginState) Handler4(req, resp *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, bool) 
 	obfn = dhcpv4.OptBootFileName(record.bootfile)
 	opt67 = &obfn
 	resp.Options.Update(*opt67)
-	return resp, true
+	return resp, false
 }
