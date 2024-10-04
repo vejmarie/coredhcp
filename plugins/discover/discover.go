@@ -57,6 +57,20 @@ type Record struct {
 	ip       string
 }
 
+type Roms struct {
+    Roms []Rom `json:"roms"`
+}
+
+// User struct which contains a name
+// a type and a list of social links
+type Rom struct {
+    Name   string `json:"name"`
+    Systemid   []string `json:"systemid"`
+    Id   []string `json:"id"`
+}
+
+var roms Roms
+
 // PluginState is the data held by an instance of the range plugin
 type PluginState struct {
 	// Rough lock for the whole plugin, we'll get better performance once we use leasestorage
@@ -91,6 +105,51 @@ type Client struct {
 func serveRPM(w http.ResponseWriter, r *http.Request) {
 	b, _ := ioutil.ReadFile("/var/rpms/"+r.URL.Path)
 	w.Write(b)
+}
+
+func serveROM(w http.ResponseWriter, r *http.Request) {
+        // We must decode the system ID from the URI and deliver
+        // the ROM file associated to it (latest version for the moment)
+        systemID := string(r.URL.Path[1:])
+        fmt.Println("ROM Request: "+systemID)
+        for i := 0; i < len(roms.Roms); i++ {
+                for j := 0; j < len(roms.Roms[i].Id); j++ {
+                        if ( roms.Roms[i].Id[j] == systemID ) {
+                                // Ok we need to serve the ROM
+                                // Latest version is preferred
+                                files, err := ioutil.ReadDir("/var/lib/iscsi_disks/roms/repo/images/")
+                                if err != nil {
+                                        log.Fatal(err)
+                                }
+                                mostRecent := time.Date(1900, time.Month(1), 1, 0, 0, 0, 0, time.UTC)
+                                var romFile string
+                                for _, file := range files {
+                                        if ! file.IsDir() {
+                                                if ( file.Name()[0:3] == roms.Roms[i].Name ) {
+                                                        // We need to decode the date of that file
+                                                        // only mtd files are of interest
+                                                        if ( file.Name()[len(file.Name())-4:] == ".mtd" ) {
+                                                                // Let's extract the date
+                                                                fileDate := strings.Split(file.Name()[ len(file.Name()) - len("01_06_2023") -4 : len(file.Name())-4], "_")
+                                                                year,_ := strconv.Atoi(fileDate[2])
+                                                                month,_ := strconv.Atoi(fileDate[0])
+                                                                day,_ := strconv.Atoi(fileDate[1])
+                                                                firstTime := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+                                                                if ( firstTime.After(mostRecent) ) {
+                                                                        mostRecent = firstTime
+                                                                        romFile = file.Name()
+                                                                }
+                                                        }
+                                                }
+                                        }
+                                }
+                                if ( len(romFile) > 1 ) {
+                                   b, _ := ioutil.ReadFile("/var/lib/iscsi_disks/roms/repo/images/"+romFile)
+                                   w.Write([]byte(b))
+                                }
+                        }
+                }
+        }
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
@@ -225,6 +284,33 @@ func setup4(args ...string) (handler.Handler4, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not load records from file: %v", err)
 	}
+	// Do we have any ROM to serve ?
+        files, err := ioutil.ReadDir("/var/lib/rom/configs/")
+        if err != nil {
+                log.Fatal(err)
+        }
+
+        for _, file := range files {
+                fmt.Println(file.Name(), file.IsDir())
+                if ! file.IsDir() {
+                        jsonFile, err := os.Open("/var/lib/rom/configs/"+file.Name())
+                        if err != nil {
+                                fmt.Println(err)
+                        }
+
+                        fmt.Println("Successfully opened "+file.Name())
+                        defer jsonFile.Close()
+                        byteValue, _ := ioutil.ReadAll(jsonFile)
+
+                        json.Unmarshal(byteValue, &roms)
+                        for i := 0; i < len(roms.Roms); i++ {
+                                for j := 0; j < len(roms.Roms[i].Id); j++ {
+                                        fmt.Println("id ", roms.Roms[i].Name, roms.Roms[i].Id[j])
+                                }
+                        }
+                }
+        }
+
 
 	// We start the webserver if needed
 	if httpState {
@@ -234,6 +320,9 @@ func setup4(args ...string) (handler.Handler4, error) {
 		mux8000 := http.NewServeMux()
 		mux8000.HandleFunc("/", serveRPM)
 		go http.ListenAndServe(":8000", mux8000)
+                mux8080 := http.NewServeMux()
+                mux8080.HandleFunc("/", serveROM)
+                go http.ListenAndServe(":8080", mux8080)
 	}
 
 	return p.Handler4, nil
