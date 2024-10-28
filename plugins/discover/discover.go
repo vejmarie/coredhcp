@@ -157,9 +157,11 @@ func home(w http.ResponseWriter, r *http.Request) {
 	var clients []Client
 	switch head {
 	case "js":
+		w.Header().Add("Content-Type", "text/javascript")
 		b, _ := ioutil.ReadFile(head + "/" + tail) // just pass the file name
 		w.Write(b)
 	case "css":
+		w.Header().Add("Content-Type", "text/css")
 		b, _ := ioutil.ReadFile(head + "/" + tail) // just pass the file name
 		w.Write(b)
 	case "client":
