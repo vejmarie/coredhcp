@@ -204,7 +204,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 		j := strings.LastIndex(string(cOutput), "Target")
 		if j == -1 {
 			log.Error("Error Target not found " + string(cOutput))
-			/ No target found ... return empty strings
+			// No target found ... return empty strings
                         fmt.Fprintf(w,"{}")
                         return
 		}
