@@ -28,14 +28,14 @@ function addSpace(descriptor, length){
 	return label
 }
 function updateClients() {
-	var Url = '/clients';
-	        $.ajax({
+        var Url = '/clients';
+                $.ajax({
                 type: "GET",
                 contentType: 'application/json',
                 url: Url,
                 success: function(response){
                         var data = JSON.parse(response);
-                        $("#clients").html("");
+                        $("#semantic").html("");
                         if ( data != null )
                         {
                                 var myarray = Object.keys(data);
@@ -47,100 +47,68 @@ function updateClients() {
                                         newClient.IP= data[myarray[i]].IP;
                                         clientList.push(newClient);
                                 }
-                                var columnSize = [2,3,2,6];
-                                var header = ["ID","Mac",,"IP", "Status"];
+                                $('#semantic').css("width","80%");
+                                $('#semantic').append("<table class=\"ui selectable celled table\" id=\"table1\">" +
+                                  "<thead>" +
+                                    "<tr><th>ID</th>" +
+                                    "<th>Label</th>" +
+                                    "<th>Mac</th>" +
+                                    "<th>IP</th>" +
+                                    "<th>State</th>" +
+                                "</tr></thead>");
+                                $('#table1').append("<tbody id=\"Table1\">");
                                 for (let i = 0; i  < clientList.length; i++ ) {
-                                        if ( clientList[i].mac.length > columnSize[1] )
-                                                columnSize[1] =  clientList[i].mac.length;
-                                        if ( clientList[i].state.length > columnSize[3] )
-                                                columnSize[3] = clientList[i].state.length;
-					if ( clientList[i].IP.length > columnSize[2] )
-                                                columnSize[2] = clientList[i].IP.length;
-					}
-                                $("#clients").append("+");
-                                for ( let i = 0; i < columnSize[0]; i++) {
-                                        $("#clients").append("-");
-                                }
-                                $("#clients").append("+");
-                                for ( let i = 0; i < columnSize[1]; i++) {
-                                        $("#clients").append("-");
-                                }
-                                $("#clients").append("+");
-                                for ( let i = 0; i < columnSize[2]; i++) {
-                                        $("#clients").append("-");
-                                }
-                                $("#clients").append("+");
-				for ( let i = 0; i < columnSize[3]; i++) {
-                                        $("#clients").append("-");
-                                }
-                                $("#clients").append("+<BR>");
-                                $("#clients").append(addSpace("ID", columnSize[0]));
-                                $("#clients").append(addSpace("MAC", columnSize[1]));
-                                $("#clients").append(addSpace("IP", columnSize[2]));
-                                $("#clients").append(addSpace("State", columnSize[3]));
-                                $("#clients").append("|<BR>");
-                                $("#clients").append("+");
-                                for ( let i = 0; i < columnSize[0]; i++) {
-                                        $("#clients").append("-");
-                                }
-                                $("#clients").append("+");
-                                for ( let i = 0; i < columnSize[1]; i++) {
-                                        $("#clients").append("-");
-                                }
-                                $("#clients").append("+");
-                                for ( let i = 0; i < columnSize[2]; i++) {
-                                        $("#clients").append("-");
-                                }
-                                $("#clients").append("+");
-				for ( let i = 0; i < columnSize[3]; i++) {
-                                        $("#clients").append("-");
-                                }
-                                $("#clients").append("+<BR>");
-                                for (let i = 0; i  < clientList.length; i++ ) {
-                                        $("#clients").append(addSpace(i.toString(),columnSize[0]));
-                                        $("#clients").append(addSpace(clientList[i].mac, columnSize[1]));
-                                        $("#clients").append(addSpace(clientList[i].IP, columnSize[2]));
-                                        $("#clients").append(addSpace(clientList[i].state, columnSize[3]));
-                                        $("#clients").append("|");
+                                        $('#Table1').append("<tr id=\"Table1_" + i.toString() + "\">");
+                                        $("#Table1_"+i.toString()).append("<td data-label=\"ID\" id=\""+ "Table1_"+i.toString()+"_id" +"\">" + i.toString() + "</td>");
+                                        $("#Table1_"+i.toString()).append("<td data-label=\"Label\">" +
+                                                "<div class=\"ui transparent input\" id=\""+"Table1_"+i.toString()+"_I_" +"\">" +
+                                                        "<input type=\"text\" placeholder=\"Search...\">" +
+                                                "</div>" +
+                                                "</td>");
+                                        document.getElementById("Table1_"+i.toString()+"_I_").oninput = function(e) {
+                                                var valueChanged = false;
+                                                if (e.type=='propertychange') {
+                                                        valueChanged = e.originalEvent.propertyName=='value';
+                                                } else {
+                                                        valueChanged = true;
+                                                }
+                                                if (valueChanged) {
+                                                        /* Code goes here */
+                                                        console.log(e.target.value);
+                                                }
+                                        };
+                                        $("#Table1_"+i.toString()).append("<td data-label=\"Mac\">" + clientList[i].mac + "</td>");
+                                        $("#Table1_"+i.toString()).append("<td data-label=\"IP\">" + clientList[i].IP + "</td>");
+                                        $("#Table1_"+i.toString()).append("<td data-label=\"State\">" + clientList[i].state + "</td>");
+                                        $('#Table1_'+i.toString()).append("</tr>");
                                         if ( clientList[i].state == "new" ) {
-                                                $("#clients").append("<label id='"+clientList[i].mac+"'> X</label>");
-                                                document.getElementById(clientList[i].mac).onclick = function () {
-							var Url = '/client/'+clientList[i].mac;
-					                $.ajax({
-						                type: "GET",
-						                contentType: 'application/json',
-						                url: Url,
-					                	success: function(response){
-									updateClients();
-								}
-							});
+                                                // Highlight the row
+                                                // if click on row then offer to destroy it
+                                                $("#Table1_"+i.toString()+"_id").css('cursor', 'pointer');
+                                                $('#Table1_'+ i.toString()).addClass("error");
+                                                document.getElementById("Table1_"+i.toString()+"_id").onclick = function () {
+                                                        var Url = '/client/'+clientList[i].mac;
+                                                        // Removing node
+                                                        $.ajax({
+                                                                type: "GET",
+                                                                contentType: 'application/json',
+                                                                url: Url,
+                                                                success: function(response){
+                                                                        updateClients();
+                                                                }
+                                                        });
                                                 };
+                                        } else {
+                                                        $("#Table1_"+i.toString()+"_id").css('cursor', 'default');
                                         }
-                                        $("#clients").append("<BR>");
                                 }
-				$("#clients").append("+");
-                                for ( let i = 0; i < columnSize[0]; i++) {
-                                        $("#clients").append("-");
-                                }
-                                $("#clients").append("+");
-                                for ( let i = 0; i < columnSize[1]; i++) {
-                                        $("#clients").append("-");
-                                }
-                                $("#clients").append("+");
-                                for ( let i = 0; i < columnSize[2]; i++) {
-                                        $("#clients").append("-");
-                                }
-				$("#clients").append("+");
-                                for ( let i = 0; i < columnSize[3]; i++) {
-                                        $("#clients").append("-");
-                                }
-                                $("#clients").append("+<BR>");
+                                $('#semantic').append("</tbody>");
+                                $('#semantic').append("</table>");
                         }
                 }
         });
 }
 function main(){
-	$("#titre").html("Welcome to coreDHCP<br>"+"===================");
 	updateClients();
 }
 

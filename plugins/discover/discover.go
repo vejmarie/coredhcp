@@ -203,7 +203,10 @@ func home(w http.ResponseWriter, r *http.Request) {
 		cOutput, _ := cmd.Output()
 		j := strings.LastIndex(string(cOutput), "Target")
 		if j == -1 {
-			log.Fatal("Error Target not found " + string(cOutput))
+			log.Error("Error Target not found " + string(cOutput))
+			/ No target found ... return empty strings
+                        fmt.Fprintf(w,"{}")
+                        return
 		}
 		k := strings.Index(string(cOutput[j:]), ":")
 		myString := cOutput[j : j+k]
