@@ -74,6 +74,14 @@ server4:
         # the IP address of the router through which the destination is reachable
         # - staticroute: 10.20.20.0/24,10.10.10.1
 
+        # range allocates leases within a range of IPs
+        # - range: <lease file> <start IP> <end IP> <lease duration>
+        # * the lease file is an initially empty file where the leases that are
+        # allocated to clients will be stored across server restarts
+        # * lease duration can be given in any format understood by go's
+        # "ParseDuration": https://golang.org/pkg/time/#ParseDuration
+        - range: leases.txt 10.0.100.127 10.0.100.191 60s
+
         # discover is providing backend automation when servicing content
         # to servers through TFTP boot and iSCSI
         # Targets are automatically configured by using linux TGT
@@ -83,11 +91,3 @@ server4:
         # an http server used to get status and remove clients can be enabled
         # it will runs on port 80
         - discover: /var/ftpd boot.mtd /var/lib/iscsi_disks iscsi.tgt http
-
-        # range allocates leases within a range of IPs
-        # - range: <lease file> <start IP> <end IP> <lease duration>
-        # * the lease file is an initially empty file where the leases that are
-        # allocated to clients will be stored across server restarts
-        # * lease duration can be given in any format understood by go's
-        # "ParseDuration": https://golang.org/pkg/time/#ParseDuration
-        - range: leases.txt 10.0.100.127 10.0.100.191 60s

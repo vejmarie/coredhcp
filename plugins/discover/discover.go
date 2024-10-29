@@ -404,7 +404,12 @@ func (p *PluginState) Handler4(req, resp *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, bool) 
 		// We need to save the record into the Map
 		p.ServersMac[req.ClientHWAddr.String()] = &rec
 		record, _ = p.ServersMac[req.ClientHWAddr.String()]
+	} else {
+		// update the IP
+                record.ip = resp.YourIPAddr.String()
+		p.ServersMac[req.ClientHWAddr.String()] = record
 	}
+
 	obfn = dhcpv4.OptBootFileName(record.bootfile)
 	opt67 = &obfn
 	resp.Options.Update(*opt67)
