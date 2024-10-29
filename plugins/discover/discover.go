@@ -55,6 +55,7 @@ type Record struct {
 	state    string
 	bootfile string
 	ip       string
+	label	 string
 }
 
 type Roms struct {
@@ -341,6 +342,7 @@ func (p *PluginState) Handler4(req, resp *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, bool) 
 		state:    "new",
 		bootfile: "boot.mtd",
 		ip:       "",
+		label:       "",
 	}
 	// we need to check if the server is within the database
 	// if not we need to create the soft link to boot it to the default image
@@ -397,6 +399,7 @@ func (p *PluginState) Handler4(req, resp *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, bool) 
 		f.WriteString("</target>\n")
 		defer f.Close()
 		rec.ip = resp.YourIPAddr.String()
+		rec.label = "label";
 		// We need to inform TGT daemon of the creation of the new target
 		// this is done by issuing a tgt-admin --update ALL
 		cmd := exec.Command("tgt-admin", "--update", "ALL")
