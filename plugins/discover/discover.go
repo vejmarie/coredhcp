@@ -101,6 +101,7 @@ type Client struct {
 	MacAddress string
 	State      string
 	IP         string
+	Label      string
 }
 
 func serveRPM(w http.ResponseWriter, r *http.Request) {
@@ -194,6 +195,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 			client.MacAddress = k
 			client.State = v.state
 			client.IP = v.ip
+			client.Label = v.label
 			clients = append(clients, client)
 			counter += 1
 		}

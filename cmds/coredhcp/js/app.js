@@ -45,6 +45,7 @@ function updateClients() {
                                         newClient.mac = data[myarray[i]].MacAddress;
                                         newClient.state = data[myarray[i]].State;
                                         newClient.IP= data[myarray[i]].IP;
+                                        newClient.Label= data[myarray[i]].Label;
                                         clientList.push(newClient);
                                 }
                                 $('#semantic').css("width","80%");
