@@ -63,7 +63,7 @@ function updateClients() {
                                         $("#Table1_"+i.toString()).append("<td data-label=\"ID\" id=\""+ "Table1_"+i.toString()+"_id" +"\">" + i.toString() + "</td>");
                                         $("#Table1_"+i.toString()).append("<td data-label=\"Label\">" +
                                                 "<div class=\"ui transparent input\" id=\""+"Table1_"+i.toString()+"_I_" +"\">" +
-                                                        "<input type=\"text\" placeholder=\"Search...\">" +
+							"<input type=\"text\" placeholder=\"Search...\" value=\""+ clientList[i].Label +"\">" +
                                                 "</div>" +
                                                 "</td>");
                                         document.getElementById("Table1_"+i.toString()+"_I_").oninput = function(e) {
