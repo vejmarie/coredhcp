@@ -74,8 +74,15 @@ function updateClients() {
                                                         valueChanged = true;
                                                 }
                                                 if (valueChanged) {
-                                                        /* Code goes here */
-                                                        console.log(e.target.value);
+                                                        // We have to send the new data through a POST call
+                                                        var data = {
+                                                            "Mac": "",
+                                                            "Label": ""
+                                                        };
+                                                        data.Mac = clientList[i].mac;
+                                                        data.Label = e.target.value;
+                                                        var jsonString = JSON.stringify(data);
+                                                        $.post("label", jsonString);
                                                 }
                                         };
                                         $("#Table1_"+i.toString()).append("<td data-label=\"Mac\">" + clientList[i].mac + "</td>");

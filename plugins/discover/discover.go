@@ -186,6 +186,22 @@ func home(w http.ResponseWriter, r *http.Request) {
 		// enough time to declare the target released from initiator
 		// 3s shall be good enough
 		time.Sleep(3 * time.Second)
+        case "label":
+                // The operation shall contain the client MAC and the new label
+                type test_struct struct {
+                    Mac string
+                    Label string
+                }
+                decoder := json.NewDecoder(r.Body)
+                var t test_struct
+                err := decoder.Decode(&t)
+                if err != nil {
+                        log.Println("Error", err)
+                }
+                // So now we can update the label into the database
+                p.ServersMac[t.Mac].label = t.Label
+                p.saveServer(net.HardwareAddr(t.Mac), p.ServersMac[t.Mac])
+                fmt.Fprintf(w,"")
 	case "clients":
 		var counter int
 		var client Client
