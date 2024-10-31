@@ -50,6 +50,57 @@ unction updateFirmwares() {
                                      "<img class=\"ui medium rounded image\" src=\"/images/cpu.png\">" +
                                 "</div></div>");
                         var data = JSON.parse(response);
+                        var dropZone = document.getElementById('firmwareDrop');
+
+                        var startUploadfirmware = function(files) {
+                                var formData = new FormData();
+                                for(var i = 0; i < files.length; i++){
+                                        var file = files[i];
+                                        formData.append('name', file.name);
+                                        formData.append('fichier', file);
+                                        console.log(file);
+                                }
+                                console.log(formData);
+                                var xhr = new XMLHttpRequest();
+                                xhr.open('POST', window.location+'upload_firmware/', true);
+
+                                xhr.onload = function () {
+                                  if (xhr.status === 200) {
+                                    // File(s) uploaded
+                                    updateFirmwares();
+                                  } else {
+                                    alert('Something went wrong uploading the file.');
+                                  }
+                                };
+                                xhr.upload.addEventListener('progress', function(e) {
+                                        var percent = e.loaded / e.total * 100;
+                                        $('#uploadProgress').progress({ percent: Math.floor(percent) });
+                                        }, false);
+
+                                xhr.send(formData);
+                        }
+
+
+
+                        dropZone.ondrop = function(e) {
+                                e.preventDefault();
+                                console.log("New firmware drop");
+                                startUploadfirmware(e.dataTransfer.files);
+                        }
+                        dropZone.ondragover = function() {
+                                $('#dropImage').css("opacity", "0.2");
+                                console.log("File coming");
+                                return false;
+                        }
+
+                        dropZone.ondragleave = function() {
+                                $('#dropImage').css("opacity", "1.0");
+                                console.log("File leaving");
+                                return false;
+                        }
+
+                        $('#uploadProgress').progress({ percent: 0 });
+
                         }
                 });
 

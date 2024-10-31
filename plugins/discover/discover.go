@@ -215,6 +215,25 @@ func home(w http.ResponseWriter, r *http.Request) {
                 firmwares = append(firmwares, firmware)
                 b, _ := json.Marshal(firmwares)
                 fmt.Fprintf(w, "%s\n", b)
+        case "upload_firmware":
+                defer r.Body.Close()
+                r.Body = http.MaxBytesReader(w, r.Body, 640<<20+4096)
+                err := r.ParseMultipartForm(640<<20 + 4096)
+                if err != nil {
+                        fmt.Printf("Error %s\n", err.Error())
+                }
+                file, handler, err := r.FormFile("fichier")
+                r.Body.Close()
+                fmt.Printf("Uploading %s\n",handler.Filename);
+                defer file.Close()
+                f, err := os.OpenFile("/var/lib/iscsi_disks/target/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0644)
+                if err != nil {
+                        fmt.Println(err)
+                        return
+                }
+                defer f.Close()
+                io.Copy(f, file)
+                fmt.Fprintf(w,"")
         case "images":
                 w.Header().Add("Content-Type", "image/png")
                 b, _ := ioutil.ReadFile(head + "/" + tail) // just pass the file name
