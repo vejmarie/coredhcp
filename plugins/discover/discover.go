@@ -250,7 +250,8 @@ func home(w http.ResponseWriter, r *http.Request) {
                 }
                 // So now we can update the label into the database
                 p.ServersMac[t.Mac].label = t.Label
-                p.saveServer(net.HardwareAddr(t.Mac), p.ServersMac[t.Mac])
+		newMac,_ := net.ParseMAC(t.Mac)
+                p.saveServer(newMac, p.ServersMac[t.Mac])
                 fmt.Fprintf(w,"")
         case "firmwares":
                 var firmware Firmware
