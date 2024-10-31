@@ -27,6 +27,33 @@ function addSpace(descriptor, length){
 	}
 	return label
 }
+unction updateFirmwares() {
+        var Url = '/firmwares';
+                $.ajax({
+                type: "GET",
+                contentType: 'application/json',
+                url: Url,
+                success: function(response){
+                        console.log(response);
+                        $("#firmwares").html("");
+                        $('#firmwares').css("width","80%");
+                        $('#firmwares').append( "<br>Firmware<br><br><div class=\"ui grid\">" +
+                                "<div class=\"fourteen wide column\">" +
+                                  "<table class=\"ui selectable celled table\" id=\"table_images\">" +
+                                  "<thead>" +
+                                    "<tr><th>ID</th>" +
+                                    "<th>Version</th>" +
+                                    "<th>Date</th>" +
+                                  "</tr></thead></table>" +
+                                "</div>" +
+                                "<div class=\"two wide column\">" +
+                                     "<img class=\"ui medium rounded image\" src=\"/images/cpu.png\">" +
+                                "</div></div>");
+                        var data = JSON.parse(response);
+                        }
+                });
+
+}
 function updateClients() {
         var Url = '/clients';
                 $.ajax({
@@ -117,6 +144,7 @@ function updateClients() {
         });
 }
 function main(){
+	updateFirmwares();
 	updateClients();
 }
 

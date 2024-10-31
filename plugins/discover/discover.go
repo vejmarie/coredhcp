@@ -104,6 +104,11 @@ type Client struct {
 	Label      string
 }
 
+type Firmware struct {
+        Version    string
+        Date       string
+}
+
 func serveRPM(w http.ResponseWriter, r *http.Request) {
 	b, _ := ioutil.ReadFile("/var/rpms/"+r.URL.Path)
 	w.Write(b)
@@ -157,6 +162,7 @@ func serveROM(w http.ResponseWriter, r *http.Request) {
 func home(w http.ResponseWriter, r *http.Request) {
 	head, tail := ShiftPath(r.URL.Path)
 	var clients []Client
+	var firmwares []Firmware
 	switch head {
 	case "js":
 		w.Header().Add("Content-Type", "text/javascript")
@@ -202,6 +208,17 @@ func home(w http.ResponseWriter, r *http.Request) {
                 p.ServersMac[t.Mac].label = t.Label
                 p.saveServer(net.HardwareAddr(t.Mac), p.ServersMac[t.Mac])
                 fmt.Fprintf(w,"")
+        case "firmwares":
+                var firmware Firmware
+                firmware.Version = "365743"
+                firmware.Date = "Oct-2024"
+                firmwares = append(firmwares, firmware)
+                b, _ := json.Marshal(firmwares)
+                fmt.Fprintf(w, "%s\n", b)
+        case "images":
+                w.Header().Add("Content-Type", "image/png")
+                b, _ := ioutil.ReadFile(head + "/" + tail) // just pass the file name
+                w.Write(b)
 	case "clients":
 		var counter int
 		var client Client
