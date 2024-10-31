@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+        "archive/tar"
+        "compress/gzip"
 	"fmt"
 	"github.com/coredhcp/coredhcp/handler"
 	"github.com/coredhcp/coredhcp/logger"
@@ -112,6 +114,48 @@ type Firmware struct {
 func serveRPM(w http.ResponseWriter, r *http.Request) {
 	b, _ := ioutil.ReadFile("/var/rpms/"+r.URL.Path)
 	w.Write(b)
+}
+
+func ExtractTarGz(gzipStream io.Reader) string {
+    uncompressedStream, err := gzip.NewReader(gzipStream)
+    if err != nil {
+        log.Fatal("ExtractTarGz: NewReader failed")
+        log.Error("ExtractTarGz: NewReader failed")
+        return "Error"
+    }
+
+    tarReader := tar.NewReader(uncompressedStream)
+
+    for true {
+        header, err := tarReader.Next()
+
+        if err == io.EOF {
+            break
+        }
+
+        if err != nil {
+            log.Fatalf("ExtractTarGz: Next() failed: %s", err.Error())
+        }
+
+        switch header.Typeflag {
+        case tar.TypeReg:
+            outFile, err := os.Create(iscsiDir + "/target/tmp/"+ header.Name)
+            if err != nil {
+                log.Fatalf("ExtractTarGz: Create() failed: %s", err.Error())
+            }
+            if _, err := io.Copy(outFile, tarReader); err != nil {
+                log.Fatalf("ExtractTarGz: Copy() failed: %s", err.Error())
+            }
+            outFile.Close()
+
+        default:
+            log.Fatalf(
+                "ExtractTarGz: uknown type: %s in %s",
+                header.Typeflag,
+                header.Name)
+        }
+    }
+    return "ok"
 }
 
 func serveROM(w http.ResponseWriter, r *http.Request) {
@@ -226,14 +270,35 @@ func home(w http.ResponseWriter, r *http.Request) {
                 r.Body.Close()
                 fmt.Printf("Uploading %s\n",handler.Filename);
                 defer file.Close()
-                f, err := os.OpenFile("/var/lib/iscsi_disks/target/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0644)
+                f, err := os.OpenFile(iscsiDir + "/target/tmp/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0644)
                 if err != nil {
                         fmt.Println(err)
                         return
                 }
                 defer f.Close()
                 io.Copy(f, file)
-                fmt.Fprintf(w,"")
+                // We must validate the file and untar it first
+                // It is gzipped and tar
+                // Must find the version and create the associated directory into the target dir
+                r, err := os.Open(iscsiDir + "/target/tmp/"+handler.Filename)
+                if err != nil {
+                        fmt.Println("error")
+                }
+                processTarball := ExtractTarGz(r)
+                os.Remove(iscsiDir + "/target/tmp/"+handler.Filename)
+                // We must read the VERSION file
+                version, err := os.Open(iscsiDir + "/target/tmp/VERSION")
+                if err != nil {
+                                fmt.Println(err)
+                }
+                defer version.Close()
+                versionValue, _ := ioutil.ReadAll(version)
+                versionFinale := strings.TrimSpace(string(versionValue))
+                os.Mkdir(iscsiDir+"/images/"+versionFinale, 0700)
+                // push the boot.mtd and iscsi.tgt file into the right directory
+                err = os.Rename(iscsiDir + "/target/tmp/boot.mtd" , iscsiDir+"/images/"+versionFinale+"/boot.mtd")
+                err = os.Rename(iscsiDir + "/target/tmp/iscsi.tgt" , iscsiDir+"/images/"+versionFinale+"/iscsi.tgt")
+                fmt.Fprintf(w,processTarball)
         case "images":
                 w.Header().Add("Content-Type", "image/png")
                 b, _ := ioutil.ReadFile(head + "/" + tail) // just pass the file name
