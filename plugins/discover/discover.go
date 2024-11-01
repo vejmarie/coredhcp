@@ -293,6 +293,20 @@ func home(w http.ResponseWriter, r *http.Request) {
                 fmt.Fprintf(w,"")
         case "firmwares":
                 var firmware Firmware
+		var versionFinal string
+                if _, err := os.Lstat(iscsiDir+"/images/default"); err == nil {
+                        // We must read the content of VERSION
+                        // And then trim it to match for default
+                        version, err := os.Open(iscsiDir + "/images/default/VERSION")
+                        if err != nil {
+                                fmt.Println(err)
+                        }
+                        defer version.Close()
+                        versionValue, _ := ioutil.ReadAll(version)
+                        versionFinal = strings.TrimSpace(string(versionValue))
+                } else {
+                        versionFinal = ""
+                }
                 files, err := ioutil.ReadDir(iscsiDir+"/images/")
                 if err != nil {
                         log.Error(iscsiDir+"/images/ doesn't seem to exist ", err)
@@ -303,7 +317,11 @@ func home(w http.ResponseWriter, r *http.Request) {
                         if file.IsDir() {
                                 firmware.Version = file.Name()
                                 firmware.Date = file.ModTime().String()
-				firmware.Default = false
+				if firmware.Version == versionFinal {
+                                        firmware.Default = true
+                                } else {
+                                        firmware.Default = false
+                                }
                                 firmwares = append(firmwares, firmware)
                         }
                 }
@@ -351,6 +369,7 @@ func home(w http.ResponseWriter, r *http.Request) {
                 os.Mkdir(iscsiDir+"/images/"+versionFinale, 0700)
                 // push the boot.mtd and iscsi.tgt file into the right directory
                 err = os.Rename(iscsiDir + "/target/tmp/boot.mtd" , iscsiDir+"/images/"+versionFinale+"/boot.mtd")
+		err = os.Rename(iscsiDir + "/target/tmp/VERSION" , iscsiDir+"/images/"+versionFinale+"/VERSION")
                 err = os.Rename(iscsiDir + "/target/tmp/iscsi.tgt" , iscsiDir+"/images/"+versionFinale+"/iscsi.tgt")
                 fmt.Fprintf(w,processTarball)
         case "images":
