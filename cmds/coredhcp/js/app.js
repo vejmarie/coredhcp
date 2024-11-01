@@ -1,10 +1,15 @@
 // Copyright 2024 Hewlett Packard Development LP.
 
 var clientList = [];
+var firmwareList = [];
 
 function client() {
     this.mac = null;
     this.state = null;
+}
+function firmware() {
+        this.version = null;
+        this.date = null;
 }
 
 
@@ -50,6 +55,58 @@ unction updateFirmwares() {
                                      "<img class=\"ui medium rounded image\" src=\"/images/cpu.png\">" +
                                 "</div></div>");
                         var data = JSON.parse(response);
+
+                        if ( data != null )
+                        {
+                                var myarray = Object.keys(data);
+                                firmwareList = [];
+                                for (let i = 0; i  < myarray.length; i++) {
+                                        var newFirmware = new firmware();
+                                        newFirmware.version = data[myarray[i]].Version;
+                                        newFirmware.date = data[myarray[i]].Date;
+                                        firmwareList.push(newFirmware);
+                                }
+                                for (let i = 0; i  < firmwareList.length; i++ ) {
+                                        $('#TableFirmware').append("<tr id=\"TableFirmware_" + i.toString() + "\">");
+                                        $("#TableFirmware_"+i.toString()).append("<td data-label=\"Default\">"+
+                                                "<center><div class='ui fitted checkbox' id=\""+ "TableFirmware_"+i.toString()+"_checked" +"\">" +
+                                                  "<input type='checkbox' name='example' id=\"" + "TableFirmware_"+i.toString()+"_checkbox" + "\">" +
+                                                  "<label></label>" +
+                                                "</div></center>" +
+                                                "</td>");
+
+                                        $("#TableFirmware_" +i.toString()+"_checkbox").prop( "checked", true );
+
+                                        // oncheck we have to remove all other checkbox
+                                        console.log("#TableFirmware_" +i.toString()+"_checkbox");
+                                        document.getElementById("TableFirmware_" +i.toString()+"_checkbox").oninput = function(e) {
+                                                console.log("CHANGEMENT");
+                                                if ( this.checked ) {
+                                                        console.log("Checked");
+                                                        $("#TableFirmware_" +i.toString()+"_checkbox").attr("disabled", "disabled");
+                                                        for (let j = 0 ; j < firmwareList.length; j++ ) {
+                                                                if ( j != i ) {
+                                                                        $("#TableFirmware_" +j.toString()+"_checkbox").removeAttr("disabled");
+                                                                        $("#TableFirmware_" +j.toString()+"_checkbox").prop("checked", false);
+                                                                }
+                                                        }
+                                                } else
+                                                        console.log("unchecked");
+                                        };
+
+                                        $("#TableFirmware_"+i.toString()).append("<td data-label=\"ID\" id=\""+ "TableFirmware_"+i.toString()+"_id" +"\">" + i.toString() + "</td>");
+                                        $("#TableFirmware_"+i.toString()).append("<td data-label=\"Version\" id=\""+ "TableFirmware_"+i.toString()+"_version" +"\">"
+                                                                           + firmwareList[i].version + "</td>");
+                                        $("#TableFirmware_"+i.toString()).append("<td data-label=\"Date\" id=\""+ "TableFirmware_"+i.toString()+"_date" +"\">"
+                                                                           + firmwareList[i].date + "</td>");
+                                        $('#TableFirmware').append("</tr>");
+                                }
+                        }
+
+
+
+
+
                         var dropZone = document.getElementById('firmwareDrop');
 
                         var startUploadfirmware = function(files) {

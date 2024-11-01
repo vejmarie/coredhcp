@@ -255,10 +255,24 @@ func home(w http.ResponseWriter, r *http.Request) {
                 fmt.Fprintf(w,"")
         case "firmwares":
                 var firmware Firmware
-                firmware.Version = "365743"
-                firmware.Date = "Oct-2024"
-                firmwares = append(firmwares, firmware)
+                files, err := ioutil.ReadDir(iscsiDir+"/images/")
+                if err != nil {
+                        log.Error(iscsiDir+"/images/ doesn't seem to exist ", err)
+                        fmt.Fprintf(w,"{}")
+                        return
+                }
+                for _, file := range files {
+                        if file.IsDir() {
+                                firmware.Version = file.Name()
+                                firmware.Date = file.ModTime().String()
+                                firmwares = append(firmwares, firmware)
+                        }
+                }
                 b, _ := json.Marshal(firmwares)
+                if len(b) == 0 {
+                        b = []byte("{}")
+                }
+
                 fmt.Fprintf(w, "%s\n", b)
         case "upload_firmware":
                 defer r.Body.Close()
