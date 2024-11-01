@@ -237,6 +237,43 @@ func home(w http.ResponseWriter, r *http.Request) {
 		// enough time to declare the target released from initiator
 		// 3s shall be good enough
 		time.Sleep(3 * time.Second)
+        case "default_firmware":
+                type firmware_struct struct {
+                    Version string
+                }
+                decoder := json.NewDecoder(r.Body)
+                var t firmware_struct
+                err := decoder.Decode(&t)
+                if err != nil {
+                        log.Println("Error", err)
+                }
+                // We must remove the Symlink from  iscsiDir+"/images/default"
+                // And setup the new link to the new version
+                if _, err := os.Lstat(iscsiDir+"/images/default"); err == nil {
+                  os.Remove(iscsiDir+"/images/default")
+                  fmt.Printf("Removing default symlink\n");
+                }
+                err = os.Symlink(iscsiDir+"/images/"+ t.Version, iscsiDir+"/images/default")
+                if err != nil {
+                    fmt.Println(err)
+                }
+
+                fmt.Printf("Default firmware set to  %s\n", t.Version)
+                fmt.Fprintf(w,"");
+
+        case "remove_firmware":
+                type firmware_struct struct {
+                    Version string
+                }
+                decoder := json.NewDecoder(r.Body)
+                var t firmware_struct
+                err := decoder.Decode(&t)
+                if err != nil {
+                        log.Println("Error", err)
+                }
+                fmt.Printf("removing %s firmware\n", t.Version)
+                fmt.Fprintf(w,"");
+
         case "label":
                 // The operation shall contain the client MAC and the new label
                 type test_struct struct {

@@ -94,6 +94,14 @@ unction updateFirmwares() {
                                                                         $("#TableFirmware_" +j.toString()+"_checkbox").prop("checked", false);
                                                                 }
                                                         }
+							// We must set our new version as the default
+                                                        var data = {
+                                                            "Version": "",
+                                                        };
+                                                        data.Version = firmwareList[i].version;
+                                                        var jsonString = JSON.stringify(data);
+                                                        $.post("default_firmware", jsonString, function(result){
+                                                        });
                                                 } else
                                                         console.log("unchecked");
                                         };
