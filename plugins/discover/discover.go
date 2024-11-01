@@ -109,6 +109,7 @@ type Client struct {
 type Firmware struct {
         Version    string
         Date       string
+	Default	   bool
 }
 
 func serveRPM(w http.ResponseWriter, r *http.Request) {
@@ -265,6 +266,7 @@ func home(w http.ResponseWriter, r *http.Request) {
                         if file.IsDir() {
                                 firmware.Version = file.Name()
                                 firmware.Date = file.ModTime().String()
+				firmware.Default = false
                                 firmwares = append(firmwares, firmware)
                         }
                 }

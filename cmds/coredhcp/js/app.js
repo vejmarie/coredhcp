@@ -64,6 +64,7 @@ unction updateFirmwares() {
                                         var newFirmware = new firmware();
                                         newFirmware.version = data[myarray[i]].Version;
                                         newFirmware.date = data[myarray[i]].Date;
+					ewFirmware.default = data[myarray[i]].Default;
                                         firmwareList.push(newFirmware);
                                 }
                                 for (let i = 0; i  < firmwareList.length; i++ ) {
@@ -75,7 +76,10 @@ unction updateFirmwares() {
                                                 "</div></center>" +
                                                 "</td>");
 
-                                        $("#TableFirmware_" +i.toString()+"_checkbox").prop( "checked", true );
+					if ( firmwareList[i].default ) {
+                                                $("#TableFirmware_" +i.toString()+"_checkbox").prop( "checked", true );
+                                                $("#TableFirmware_" +i.toString()+"_checkbox").attr("disabled", "disabled");
+                                        }
 
                                         // oncheck we have to remove all other checkbox
                                         console.log("#TableFirmware_" +i.toString()+"_checkbox");
