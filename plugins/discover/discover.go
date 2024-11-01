@@ -260,7 +260,6 @@ func home(w http.ResponseWriter, r *http.Request) {
 
                 fmt.Printf("Default firmware set to  %s\n", t.Version)
                 fmt.Fprintf(w,"");
-
         case "remove_firmware":
                 type firmware_struct struct {
                     Version string
@@ -272,8 +271,22 @@ func home(w http.ResponseWriter, r *http.Request) {
                         log.Println("Error", err)
                 }
                 fmt.Printf("removing %s firmware\n", t.Version)
+                // We must check if that is also the default image.
+                // If that is the case then we need to remove the default image
+                if _, err := os.Lstat(iscsiDir+"/images/default"); err == nil {
+                        version, err := os.Open(iscsiDir + "/images/default/VERSION")
+                        if err != nil {
+                                fmt.Println(err)
+                         }
+                        defer version.Close()
+                        versionValue, _ := ioutil.ReadAll(version)
+                        versionFinale := strings.TrimSpace(string(versionValue))
+                        if ( versionFinale == t.Version ) {
+                                os.RemoveAll(iscsiDir+"/images/default")
+                        }
+                }
+                os.RemoveAll(iscsiDir+"/images/"+t.Version)
                 fmt.Fprintf(w,"");
-
         case "label":
                 // The operation shall contain the client MAC and the new label
                 type test_struct struct {
@@ -423,8 +436,12 @@ func home(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-		b, _ := json.Marshal(clients)
-		fmt.Fprintf(w, "%s\n", b)
+                if ( len(clients) > 0 ) {
+                        b, _ := json.Marshal(clients)
+                        fmt.Fprintf(w, "%s\n", b)
+                } else {
+                        fmt.Fprintf(w,"{}")
+                }
 	default:
 		b, _ := ioutil.ReadFile("html/home.html")
 		t := template.New("my template")
@@ -559,55 +576,74 @@ func (p *PluginState) Handler4(req, resp *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, bool) 
 	        req.ClientHWAddr = claddr
 	}
 	record, ok := p.ServersMac[req.ClientHWAddr.String()]
-	if !ok {
-		// Server doesn't exist let's create it
-		addr := req.ClientHWAddr.String()
-		addr = strings.Replace(addr, ":", "", -1)
-		rec.bootfile = "boot_" + addr + ".mtd"
-		os.Symlink(tftpDir+"/"+tftpDefault, tftpDir+"/"+rec.bootfile)
-		// We need to associate an iscsi target too
-		os.Mkdir(iscsiDir+"/"+addr, 0700)
-		// We need to copy the initial iscsi target file
-		r, _ := os.Open(iscsiDir + "/" + iscsiDefault)
-		defer r.Close() // ignore error: file was opened read-only.
-		w, _ := os.Create(iscsiDir + "/" + addr + "/disk01.img")
-		_, _ = io.Copy(w, r)
-		// Now we need to update the TGT configuration
-		f, _ := os.Create("/etc/tgt/conf.d/target" + addr + ".conf")
-		f.WriteString("<target iqn.2022-04.world.srv:dlp.target" + addr + ">\n")
-		f.WriteString("     # provided device as a iSCSI target\n")
-		f.WriteString("     nop_count 1\n")
-		f.WriteString("     nop_interval 2\n")
-		f.WriteString("     <backing-store " + iscsiDir + "/" + addr + "/disk01.img>\n")
-		f.WriteString("		lun 1\n")
-		f.WriteString("		block-size 512\n")
-		f.WriteString("		allow-in-use yes\n")
-		f.WriteString("		write-cache on\n")
-		f.WriteString("		vendor_id openbmc\n")
-		f.WriteString("		product_id rootfs\n")
-		f.WriteString("     </backing-store>\n")
-	//	f.WriteString("     initiator-address " + resp.YourIPAddr.String() + "\n")
-		f.WriteString("     initiator-name iqn.2016-04.com.open-iscsi:" + strings.ReplaceAll(req.ClientHWAddr.String(),":","") + "\n")
-		f.WriteString("</target>\n")
-		defer f.Close()
-		rec.ip = resp.YourIPAddr.String()
-		rec.label = "label";
-		// We need to inform TGT daemon of the creation of the new target
-		// this is done by issuing a tgt-admin --update ALL
-		cmd := exec.Command("tgt-admin", "--update", "ALL")
-		_, _ = cmd.Output()
+        if !ok {
+                // We need to enable the servers here !
+                // So instead of creating a symlink for the boot file probably better
+                // to create a copy just in case the firmware got erased.
 
-		// We can create the server
-		_ = p.saveServer(req.ClientHWAddr, &rec)
-		// We need to save the record into the Map
-		p.ServersMac[req.ClientHWAddr.String()] = &rec
-		record, _ = p.ServersMac[req.ClientHWAddr.String()]
-	} else {
-		// update the IP
+                if _, err := os.Lstat(iscsiDir+"/images/default"); err != nil {
+                  fmt.Printf("No default image \n");
+                  rec.bootfile=""
+                  rec.ip = resp.YourIPAddr.String()
+                  rec.label = "label";
+                  _ = p.saveServer(req.ClientHWAddr, &rec)
+                  p.ServersMac[req.ClientHWAddr.String()] = &rec
+                  record, _ = p.ServersMac[req.ClientHWAddr.String()]
+                } else {
+
+                        // Server doesn't exist let's create it
+                        addr := req.ClientHWAddr.String()
+                        addr = strings.Replace(addr, ":", "", -1)
+                        rec.bootfile = "boot_" + addr + ".mtd"
+
+                        // os.Symlink(tftpDir+"/"+tftpDefault, tftpDir+"/"+rec.bootfile)
+                        r, _ := os.Open(iscsiDir + "/images/default/boot.mtd")
+                        defer r.Close() // ignore error: file was opened read-only.
+                        w, _ := os.Create(tftpDir+"/"+rec.bootfile)
+                        _, _ = io.Copy(w, r)
+                        w.Close()
+                        // We need to associate an iscsi target too
+                        os.Mkdir(iscsiDir+"/"+addr, 0700)
+                        // We need to copy the initial iscsi target file
+                        r, _ = os.Open(iscsiDir + "/images/default/iscsi.tgt")
+                        defer r.Close() // ignore error: file was opened read-only.
+                        w, _ = os.Create(iscsiDir + "/" + addr + "/disk01.img")
+                        _, _ = io.Copy(w, r)
+                        // Now we need to update the TGT configuration
+                        f, _ := os.Create("/etc/tgt/conf.d/target" + addr + ".conf")
+                        f.WriteString("<target iqn.2022-04.world.srv:dlp.target" + addr + ">\n")
+                        f.WriteString("     # provided device as a iSCSI target\n")
+                        f.WriteString("     nop_count 1\n")
+                        f.WriteString("     nop_interval 2\n")
+                        f.WriteString("     <backing-store " + iscsiDir + "/" + addr + "/disk01.img>\n")
+                        f.WriteString("         lun 1\n")
+                        f.WriteString("         block-size 512\n")
+                        f.WriteString("         allow-in-use yes\n")
+                        f.WriteString("         write-cache on\n")
+                        f.WriteString("         vendor_id openbmc\n")
+                        f.WriteString("         product_id rootfs\n")
+                        f.WriteString("     </backing-store>\n")
+                //      f.WriteString("     initiator-address " + resp.YourIPAddr.String() + "\n")
+                        f.WriteString("     initiator-name iqn.2016-04.com.open-iscsi:" + strings.ReplaceAll(req.ClientHWAddr.String(),":","") + "\n")
+                        f.WriteString("</target>\n")
+                        defer f.Close()
+                        rec.ip = resp.YourIPAddr.String()
+                        rec.label = "label";
+                        // We need to inform TGT daemon of the creation of the new target
+                        // this is done by issuing a tgt-admin --update ALL
+                        cmd := exec.Command("tgt-admin", "--update", "ALL")
+                        _, _ = cmd.Output()
+
+                        // We can create the server
+                        _ = p.saveServer(req.ClientHWAddr, &rec)
+                        // We need to save the record into the Map
+                        p.ServersMac[req.ClientHWAddr.String()] = &rec
+                        record, _ = p.ServersMac[req.ClientHWAddr.String()]
+                }
+        } else {
                 record.ip = resp.YourIPAddr.String()
-		p.ServersMac[req.ClientHWAddr.String()] = record
-	}
-
+                p.ServersMac[req.ClientHWAddr.String()] = record
+        }
 	obfn = dhcpv4.OptBootFileName(record.bootfile)
 	opt67 = &obfn
 	resp.Options.Update(*opt67)

@@ -7,6 +7,7 @@ function client() {
     this.mac = null;
     this.state = null;
 }
+
 function firmware() {
         this.version = null;
         this.date = null;
@@ -14,25 +15,25 @@ function firmware() {
 
 
 function clearDocument(){
-	$(document.body).empty();
+        $(document.body).empty();
 }
 
 function loadHTML(filename){
-	jQuery.ajaxSetup({async:false});
+        jQuery.ajaxSetup({async:false});
         jQuery.get(filename, function(data, status){
                 $(document.body).append(data);
         });
         jQuery.ajaxSetup({async:true});
 }
 function addSpace(descriptor, length){
-	var label ="|";
-	label = label + descriptor;
-	for ( let i = 0 ; i < ( length - descriptor.length); i++ ) {
-		label = label + '&nbsp;';
-	}
-	return label
+        var label ="|";
+        label = label + descriptor;
+        for ( let i = 0 ; i < ( length - descriptor.length); i++ ) {
+                label = label + '&nbsp;';
+        }
+        return label
 }
-unction updateFirmwares() {
+function updateFirmwares() {
         var Url = '/firmwares';
                 $.ajax({
                 type: "GET",
@@ -44,15 +45,20 @@ unction updateFirmwares() {
                         $('#firmwares').css("width","80%");
                         $('#firmwares').append( "<br>Firmware<br><br><div class=\"ui grid\">" +
                                 "<div class=\"fourteen wide column\">" +
-                                  "<table class=\"ui selectable celled table\" id=\"table_images\">" +
+                                  "<table class=\"ui selectable celled table\" id=\"TableFirmware\">" +
                                   "<thead>" +
-                                    "<tr><th>ID</th>" +
+                                    "<tr><th><center>Default</center></th>" +
+                                    "<th>ID</th>" +
                                     "<th>Version</th>" +
                                     "<th>Date</th>" +
                                   "</tr></thead></table>" +
                                 "</div>" +
-                                "<div class=\"two wide column\">" +
-                                     "<img class=\"ui medium rounded image\" src=\"/images/cpu.png\">" +
+                                "<div class=\"two wide column\" id=\"firmwareDrop\">" +
+                                     "<img class=\"ui medium rounded image\" id=\"dropImage\" src=\"/images/cpu.png\">" +
+                                     "<br><div id=\"uploadProgress\" class=\"ui small progress\">" +
+                                     "     <div class=\"bar\"><div class=\"progress\"></div></div>" +
+                                     "     <div class=\"label\">Uploading File</div>" +
+                                     "</div>"+
                                 "</div></div>");
                         var data = JSON.parse(response);
 
@@ -64,7 +70,7 @@ unction updateFirmwares() {
                                         var newFirmware = new firmware();
                                         newFirmware.version = data[myarray[i]].Version;
                                         newFirmware.date = data[myarray[i]].Date;
-					ewFirmware.default = data[myarray[i]].Default;
+                                        newFirmware.default = data[myarray[i]].Default;
                                         firmwareList.push(newFirmware);
                                 }
                                 for (let i = 0; i  < firmwareList.length; i++ ) {
@@ -75,8 +81,7 @@ unction updateFirmwares() {
                                                   "<label></label>" +
                                                 "</div></center>" +
                                                 "</td>");
-
-					if ( firmwareList[i].default ) {
+                                        if ( firmwareList[i].default ) {
                                                 $("#TableFirmware_" +i.toString()+"_checkbox").prop( "checked", true );
                                                 $("#TableFirmware_" +i.toString()+"_checkbox").attr("disabled", "disabled");
                                         }
@@ -84,9 +89,7 @@ unction updateFirmwares() {
                                         // oncheck we have to remove all other checkbox
                                         console.log("#TableFirmware_" +i.toString()+"_checkbox");
                                         document.getElementById("TableFirmware_" +i.toString()+"_checkbox").oninput = function(e) {
-                                                console.log("CHANGEMENT");
                                                 if ( this.checked ) {
-                                                        console.log("Checked");
                                                         $("#TableFirmware_" +i.toString()+"_checkbox").attr("disabled", "disabled");
                                                         for (let j = 0 ; j < firmwareList.length; j++ ) {
                                                                 if ( j != i ) {
@@ -94,7 +97,7 @@ unction updateFirmwares() {
                                                                         $("#TableFirmware_" +j.toString()+"_checkbox").prop("checked", false);
                                                                 }
                                                         }
-							// We must set our new version as the default
+                                                        // We must set our new version as the default
                                                         var data = {
                                                             "Version": "",
                                                         };
@@ -102,11 +105,38 @@ unction updateFirmwares() {
                                                         var jsonString = JSON.stringify(data);
                                                         $.post("default_firmware", jsonString, function(result){
                                                         });
+
                                                 } else
                                                         console.log("unchecked");
                                         };
 
                                         $("#TableFirmware_"+i.toString()).append("<td data-label=\"ID\" id=\""+ "TableFirmware_"+i.toString()+"_id" +"\">" + i.toString() + "</td>");
+
+                                        $("#TableFirmware_"+i.toString()+"_id").css('cursor', 'pointer');
+                                        document.getElementById("TableFirmware_"+i.toString()+"_id").onclick = function () {
+                                        // We need to remove the firmware and then reload the table
+                                                var data = {
+                                                            "Version": "",
+                                                };
+                                                data.Version = firmwareList[i].version;
+                                                var jsonString = JSON.stringify(data);
+                                                $.post("remove_firmware", jsonString, function(result){
+                                                        updateFirmwares();
+                                                });
+
+/*                                                        var Url = '/client/'+clientList[i].mac;
+                                                        // Removing node
+                                                        $.ajax({
+                                                                type: "GET",
+                                                                contentType: 'application/json',
+                                                                url: Url,
+                                                                success: function(response){
+                                                                        updateClients();
+                                                                }
+                                                        });
+                                                        */
+                                                console.log("remove Firmware");
+                                        };
                                         $("#TableFirmware_"+i.toString()).append("<td data-label=\"Version\" id=\""+ "TableFirmware_"+i.toString()+"_version" +"\">"
                                                                            + firmwareList[i].version + "</td>");
                                         $("#TableFirmware_"+i.toString()).append("<td data-label=\"Date\" id=\""+ "TableFirmware_"+i.toString()+"_date" +"\">"
@@ -114,8 +144,6 @@ unction updateFirmwares() {
                                         $('#TableFirmware').append("</tr>");
                                 }
                         }
-
-
 
 
 
@@ -174,6 +202,7 @@ unction updateFirmwares() {
                 });
 
 }
+
 function updateClients() {
         var Url = '/clients';
                 $.ajax({
@@ -192,25 +221,27 @@ function updateClients() {
                                         newClient.mac = data[myarray[i]].MacAddress;
                                         newClient.state = data[myarray[i]].State;
                                         newClient.IP= data[myarray[i]].IP;
-                                        newClient.Label= data[myarray[i]].Label;
+                                        newClient.Label = data[myarray[i]].Label;
                                         clientList.push(newClient);
                                 }
                                 $('#semantic').css("width","80%");
-                                $('#semantic').append("<table class=\"ui selectable celled table\" id=\"table1\">" +
+                                $('#semantic').append( "<br>Managed systems<br><br>" +
+                                  "<table class=\"ui selectable celled table\" id=\"table1\">" +
                                   "<thead>" +
                                     "<tr><th>ID</th>" +
                                     "<th>Label</th>" +
                                     "<th>Mac</th>" +
                                     "<th>IP</th>" +
                                     "<th>State</th>" +
-                                "</tr></thead>");
+                                "</tr></thead>" +
+                                "");
                                 $('#table1').append("<tbody id=\"Table1\">");
                                 for (let i = 0; i  < clientList.length; i++ ) {
                                         $('#Table1').append("<tr id=\"Table1_" + i.toString() + "\">");
                                         $("#Table1_"+i.toString()).append("<td data-label=\"ID\" id=\""+ "Table1_"+i.toString()+"_id" +"\">" + i.toString() + "</td>");
                                         $("#Table1_"+i.toString()).append("<td data-label=\"Label\">" +
                                                 "<div class=\"ui transparent input\" id=\""+"Table1_"+i.toString()+"_I_" +"\">" +
-							"<input type=\"text\" placeholder=\"Search...\" value=\""+ clientList[i].Label +"\">" +
+                                                        "<input type=\"text\" placeholder=\"Search...\" value=\""+ clientList[i].Label +"\">" +
                                                 "</div>" +
                                                 "</td>");
                                         document.getElementById("Table1_"+i.toString()+"_I_").oninput = function(e) {
@@ -264,7 +295,6 @@ function updateClients() {
         });
 }
 function main(){
-	updateFirmwares();
-	updateClients();
+        updateFirmwares();
+        updateClients();
 }
-
