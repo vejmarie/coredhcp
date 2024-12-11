@@ -426,12 +426,15 @@ func home(w http.ResponseWriter, r *http.Request) {
 		for i := 1; i < (entries + 1); i++ {
 			cmd := exec.Command("tgtadm", "--lld", "iscsi", "--op", "show", "--mode", "conn", "--tid", strconv.Itoa(i))
 			cOutput, _ := cmd.Output()
-			j := strings.Index(string(cOutput), "IP Address:")
-			if j > 0 {
-				IP := strings.TrimSuffix(string(cOutput[j+len("IP Address: "):]), "\n")
-				for k, v := range clients {
-					if v.IP == IP {
-						clients[k].State = "Connected"
+			lines := strings.Split(string(cOutput), "\n")
+                        for k := 1; k < ( len(lines)); k++ {
+				j := strings.Index(lines[k], "IP Address:")
+				if j > 0 {
+					IP := strings.TrimSuffix(string(lines[k][j+len("IP Address: "):]), "\n")
+					for k, v := range clients {
+						if v.IP == IP {
+							clients[k].State = "Connected"
+						}
 					}
 				}
 			}
