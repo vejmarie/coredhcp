@@ -1,5 +1,5 @@
 // Copyright 2024 Hewlett Packard Development LP.
-
+//
 // This package implement auto discover of GXP based HPE server
 
 package discover
