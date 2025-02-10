@@ -3,6 +3,37 @@
 var clientList = [];
 var firmwareList = [];
 
+function setupUI() {
+        document.getElementById("buttonFirmware").onclick = function () {
+                document.getElementById("buttonFirmware").classList.add("active");
+                document.getElementById("buttonConsole").classList.remove("active");
+                document.getElementById("buttonSystems").classList.remove("active");
+
+                document.getElementById("tabFirmware").classList.add("active");
+                document.getElementById("tabConsole").classList.remove("active");
+                document.getElementById("tabSystems").classList.remove("active");
+        };
+        document.getElementById("buttonConsole").onclick = function () {
+                document.getElementById("buttonFirmware").classList.remove("active");
+                document.getElementById("buttonConsole").classList.add("active");
+                document.getElementById("buttonSystems").classList.remove("active");
+
+                document.getElementById("tabFirmware").classList.remove("active");
+                document.getElementById("tabConsole").classList.add("active");
+                document.getElementById("tabSystems").classList.remove("active");
+        };
+        document.getElementById("buttonSystems").onclick = function () {
+                document.getElementById("buttonFirmware").classList.remove("active");
+                document.getElementById("buttonConsole").classList.remove("active");
+                document.getElementById("buttonSystems").classList.add("active");
+
+                document.getElementById("tabFirmware").classList.remove("active");
+                document.getElementById("tabConsole").classList.remove("active");
+                document.getElementById("tabSystems").classList.add("active");
+        };
+
+}
+
 function client() {
     this.mac = null;
     this.state = null;
@@ -211,7 +242,7 @@ function updateClients() {
                 url: Url,
                 success: function(response){
                         var data = JSON.parse(response);
-                        $("#semantic").html("");
+                        $("#systems").html("");
                         if ( data != null )
                         {
                                 var myarray = Object.keys(data);
@@ -224,8 +255,8 @@ function updateClients() {
                                         newClient.Label = data[myarray[i]].Label;
                                         clientList.push(newClient);
                                 }
-                                $('#semantic').css("width","80%");
-                                $('#semantic').append( "<br>Managed systems<br><br>" +
+                                $('#systems').css("width","80%");
+                                $('#systems').append( "<br>Managed systems<br><br>" +
                                   "<table class=\"ui selectable celled table\" id=\"table1\">" +
                                   "<thead>" +
                                     "<tr><th>ID</th>" +
@@ -264,7 +295,37 @@ function updateClients() {
                                                 }
                                         };
                                         $("#Table1_"+i.toString()).append("<td data-label=\"Mac\">" + clientList[i].mac + "</td>");
-                                        $("#Table1_"+i.toString()).append("<td data-label=\"IP\">" + clientList[i].IP + "</td>");
+                                        $("#Table1_"+i.toString()).append("<td id=\"IP_" + i.toString() +"\" data-label=\"IP\">" + clientList[i].IP + "</td>");
+
+					document.getElementById("IP_"+i.toString()).onclick = function () {
+                                                var elements = clientList[i].IP.split(".");
+                                                var Url ='/startConsole/'+ elements[3] ;
+                                                console.log(Url);
+                                                console.log(window.location.origin+ '/getConsole/'+elements[3]+'/');
+                                                var address = window.location.origin+ '/getConsole/'+elements[3]+'/';
+                                                $.ajax({
+                                                                type: "GET",
+                                                                contentType: 'application/json',
+                                                                url: Url,
+                                                                success: function(response){
+                                                                        $('#systemConsole').contents().find("head").remove();
+                                                                        $('#systemConsole').contents().find("body").remove();
+                                                                        $('#systemConsole').removeAttr("src");
+                                                                        $('#systemConsole').attr("src", address);
+                                                                        // We switch to the console tab
+                                                                        document.getElementById("buttonFirmware").classList.remove("active");
+                                                                        document.getElementById("buttonConsole").classList.add("active");
+                                                                        document.getElementById("buttonSystems").classList.remove("active");
+
+                                                                        document.getElementById("tabFirmware").classList.remove("active");
+                                                                        document.getElementById("tabConsole").classList.add("active");
+                                                                        document.getElementById("tabSystems").classList.remove("active");
+
+                                                                }
+                                                });
+                                        };
+
+
                                         $("#Table1_"+i.toString()).append("<td data-label=\"State\">" + clientList[i].state + "</td>");
                                         $('#Table1_'+i.toString()).append("</tr>");
                                         if ( clientList[i].state == "new" ) {
@@ -288,13 +349,14 @@ function updateClients() {
                                                         $("#Table1_"+i.toString()+"_id").css('cursor', 'default');
                                         }
                                 }
-                                $('#semantic').append("</tbody>");
-                                $('#semantic').append("</table>");
+                                $('#systems').append("</tbody>");
+                                $('#systems').append("</table>");
                         }
                 }
         });
 }
 function main(){
+        setupUI();
         updateFirmwares();
         updateClients();
 }

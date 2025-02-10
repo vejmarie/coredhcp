@@ -23,10 +23,28 @@
 </center>
 </br>
 
+<div class="ui top attached tabular menu">
+  <a class="item active" id="buttonFirmware" data-tab="first">Firmware</a>
+  <a class="item" id="buttonSystems" data-tab="second">Systems</a>
+  <a class="item" id="buttonConsole" data-tab="third">Console</a>
+</div>
+
 <div id="titre"></div>
 <center>
-<div id="firmwares"></div>
-<div id="semantic"></div>
+<div class="ui bottom attached tab segment active" id="tabFirmware" data-tab="first" style="border:0px">
+        <div id="firmwares"></div>
+</div>
+<div class="ui bottom attached tab segment" id="tabSystems" data-tab="second" style="border:0px">
+        <div id="systems"></div>
+</div>
+<div class="ui bottom attached tab segment" id="tabConsole" data-tab="third" style="border:0px">
+        <div id="console">
+                        <div class="embed-responsive embed-responsive-16by9" style="margin-top:10px">
+                        <iframe id="systemConsole" src="" allowfullscreen
+                                style="background-color:#444444;height:600px;width:800px;"></iframe>
+                        </div>
+        </div>
+</div>
 </center>
 <script>main()</script>
 </body>
