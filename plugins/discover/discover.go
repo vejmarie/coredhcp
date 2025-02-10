@@ -209,6 +209,55 @@ func home(w http.ResponseWriter, r *http.Request) {
 	var clients []Client
 	var firmwares []Firmware
 	switch head {
+                i, _ := strconv.Atoi(tail[1:])
+                port := "8" + tail[1:]
+                // Ok we got a port and we can start ttyd
+                var args []string
+                args = append(args, "-p")
+                args = append(args,port)
+                args = append(args, "-W")
+                args = append(args, "-o")
+//              args = append(args, "-R")
+//                args = append(args, "unbuffer")
+//                args = append(args, "/usr/bin/screen")
+                args = append(args, "/usr/bin/ssh" )
+                args = append(args, "root@10.0.100." + tail[1:])
+                // We shall check if the command runs
+                for j := 0; j < len(args); j++ {
+                        fmt.Println(args[j])
+                }
+                ttyDCommand[i] = exec.Command("/usr/bin/ttyd", args...)
+                ttyDCommand[i].Start()
+                done := make(chan error, 1)
+                go func() {
+                        done <- ttyDCommand[i].Wait()
+                        // We need to clean up the screen session
+                }()
+                conn, err := net.DialTimeout("tcp", "localhost:"+port, 220*time.Millisecond)
+                        maxLoop := 5
+                        for err != nil && maxLoop > 0 {
+                                conn, err = net.DialTimeout("tcp", "localhost:"+port, 220*time.Millisecond)
+                        }
+                        if err != nil {
+                                // Daemon has not started
+                                // Let's report an error
+                                w.Write([]byte("Error"))
+                                return
+                        }
+                conn.Close()
+                w.Write([]byte(port))
+        case "getConsole":
+                filePath := strings.Split(tail, "/")
+                port := "8" + filePath[1]
+                url, _ := url.Parse("http://localhost:" + port)
+                proxy := httputil.NewSingleHostReverseProxy(url)
+                r.URL.Host = "http://localhost:" + port
+                r.URL.Path = "/"
+                if len(filePath) > 2 {
+                        r.URL.Path = r.URL.Path + filePath[2]
+                }
+                r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
+                proxy.ServeHTTP(w, r)
 	case "js":
 		w.Header().Add("Content-Type", "text/javascript")
 		b, _ := ioutil.ReadFile(head + "/" + tail) // just pass the file name
