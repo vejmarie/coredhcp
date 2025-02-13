@@ -19,6 +19,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+        "net/http/httputil"
 	"net/url"
 	"net"
 	"os"
@@ -29,6 +30,8 @@ import (
 	"sync"
 	"time"
 )
+
+var ttyDCommand [256]*exec.Cmd
 
 var (
 	tftpDir      string
@@ -209,6 +212,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 	var clients []Client
 	var firmwares []Firmware
 	switch head {
+	case "startConsole":
                 i, _ := strconv.Atoi(tail[1:])
                 port := "8" + tail[1:]
                 // Ok we got a port and we can start ttyd
