@@ -30,6 +30,8 @@ function setupUI() {
                 document.getElementById("tabFirmware").classList.remove("active");
                 document.getElementById("tabConsole").classList.remove("active");
                 document.getElementById("tabSystems").classList.add("active");
+		// We can update the client list
+                updateClients();
         };
 
 }
