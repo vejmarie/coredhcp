@@ -215,7 +215,10 @@ func home(w http.ResponseWriter, r *http.Request) {
 	case "startConsole":
                 i, _ := strconv.Atoi(tail[1:])
                 port := "8" + tail[1:]
-                // Ok we got a port and we can start ttyd
+		ipaddr := "10.0.100." + tail[1:]
+		cmd := exec.Command("ssh-keygen", "-R", ipaddr)
+		_, _ = cmd.Output()
+		// Ok we got a port and we can start ttyd
                 var args []string
                 args = append(args, "-p")
                 args = append(args,port)
